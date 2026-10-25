@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum MoodType {
+  love
+  heartbreak
+  sadness
+  loneliness
+  hope
+  healing
+  happiness
+  anger
+  friendship
+  motivation
+  grief
+  gratitude
+  self_discovery
+  life
+
+  @@map("mood_type")
+}
+
+enum VisibilityType {
+  public
+  unlisted
+  private
+
+  @@map("visibility_type")
+}
+
+enum PoemStatusType {
+  draft
+  published
+  archived
+
+  @@map("poem_status_type")
+}
+
+model Profile {
+  id               String    @id @db.Uuid
+  username         String    @unique
+  displayName      String    @map("display_name")
+  penName          String?   @map("pen_name")
+  bio              String?
+  avatarUrl        String?   @map("avatar_url")
+  website          String?
+  poetryInterests  String[]  @map("poetry_interests")
+  isAdmin          Boolean   @default(false) @map("is_admin")
+  isSuspended      Boolean   @default(false) @map("is_suspended")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  poems            Poem[]
+  comments         Comment[]
+  likes            PoemLike[]
+  bookmarks        Bookmark[]
+  following        Follow[]        @relation("FollowerRelation")
+  followers        Follow[]        @relation("FollowingRelation")
+  blockedUsers     BlockedUser[]   @relation("BlockerRelation")
+  blockedBy        BlockedUser[]   @relation("BlockedRelation")
+  reports          Report[]        @relation("ReporterRelation")
+  reportedReports  Report[]        @relation("ReportedUserRelation")
+  moderationActions ModerationAction[]
+  createdPrompts   WritingPrompt[]
+
+  @@map("profiles")
+}
+
+model Poem {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authorId     String          @map("author_id") @db.Uuid
+  title        String
+  body         String
+  mood         MoodType?
+  visibility   VisibilityType  @default(private)
+  status       PoemStatusType  @default(draft)
+  promptId     String?         @map("prompt_id") @db.Uuid
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  publishedAt  DateTime?       @map("published_at") @db.Timestamptz
+
+  author       Profile         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  prompt       WritingPrompt?  @relation(fields: [promptId], references: [id], onDelete: SetNull)
+  tags         PoemTag[]
+  likes        PoemLike[]
+  bookmarks    Bookmark[]
+  comments     Comment[]
+  reports      Report[]
+
+  @@map("poems")
+}
+
+model PoemTag {
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poemId  String @map("poem_id") @db.Uuid
+  tag     String
+
+  poem    Poem   @relation(fields: [poemId], references: [id], onDelete: Cascade)
+
+  @@unique([poemId, tag])
+  @@map("poem_tags")
+}
+
+model PoemLike {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poemId    String   @map("poem_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  poem      Poem     @relation(fields: [poemId], references: [id], onDelete: Cascade)
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([poemId, userId])
+  @@map("poem_likes")
+}
+
+model Follow {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  followerId  String   @map("follower_id") @db.Uuid
+  followingId String   @map("following_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  follower    Profile  @relation("FollowerRelation", fields: [followerId], references: [id], onDelete: Cascade)
+  following   Profile  @relation("FollowingRelation", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Bookmark {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poemId    String   @map("poem_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  poem      Poem     @relation(fields: [poemId], references: [id], onDelete: Cascade)
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([poemId, userId])
+  @@map("bookmarks")
+}
+
+model Comment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poemId    String   @map("poem_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  body      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  poem      Poem     @relation(fields: [poemId], references: [id], onDelete: Cascade)
+  author    Profile  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reports   Report[]
+
+  @@map("comments")
+}
+
+model Notification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  actorId   String?  @map("actor_id") @db.Uuid
+  type      String
+  poemId    String?  @map("poem_id") @db.Uuid
+  commentId String?  @map("comment_id") @db.Uuid
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("notifications")
+}
+
+model Report {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reporterId     String    @map("reporter_id") @db.Uuid
+  poemId         String?   @map("poem_id") @db.Uuid
+  commentId      String?   @map("comment_id") @db.Uuid
+  reportedUserId String?   @map("reported_user_id") @db.Uuid
+  reason         String
+  description    String?
+  status         String    @default("pending")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  reporter       Profile   @relation("ReporterRelation", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser   Profile?  @relation("ReportedUserRelation", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  poem           Poem?     @relation(fields: [poemId], references: [id], onDelete: SetNull)
+  comment        Comment?  @relation(fields: [commentId], references: [id], onDelete: SetNull)
+
+  @@map("reports")
+}
+
+model BlockedUser {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  blockerId String   @map("blocker_id") @db.Uuid
+  blockedId String   @map("blocked_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  blocker   Profile  @relation("BlockerRelation", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   Profile  @relation("BlockedRelation", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@map("blocked_users")
+}
+
+model ModerationAction {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId    String   @map("admin_id") @db.Uuid
+  reportId   String?  @map("report_id") @db.Uuid
+  actionType String   @map("action_type")
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id")
+  reason     String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  admin      Profile  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("moderation_actions")
+}
+
+model WritingPrompt {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  body       String
+  isActive   Boolean   @default(false) @map("is_active")
+  activeDate DateTime? @map("active_date") @db.Date
+  createdBy  String?   @map("created_by") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  creator    Profile?  @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  poems      Poem[]
+
+  @@map("writing_prompts")
+}
