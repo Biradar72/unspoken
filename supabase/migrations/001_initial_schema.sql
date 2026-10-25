@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   bio           TEXT,
   avatar_url    TEXT,
   website       TEXT,
+  phone_number  TEXT,
   poetry_interests TEXT[],
   is_admin      BOOLEAN NOT NULL DEFAULT FALSE,
   is_suspended  BOOLEAN NOT NULL DEFAULT FALSE,
@@ -603,7 +604,7 @@ GRANT SELECT ON public.public_poems_with_stats TO anon, authenticated;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, username, display_name, avatar_url)
+  INSERT INTO public.profiles (id, username, display_name, avatar_url, phone_number)
   VALUES (
     new.id,
     COALESCE(
@@ -614,12 +615,14 @@ BEGIN
       new.raw_user_meta_data->>'display_name',
       'Poet'
     ),
-    COALESCE(new.raw_user_meta_data->>'avatar_url', NULL)
+    COALESCE(new.raw_user_meta_data->>'avatar_url', NULL),
+    COALESCE(new.raw_user_meta_data->>'phone_number', NULL)
   )
   ON CONFLICT (id) DO UPDATE
   SET
     username = EXCLUDED.username,
-    display_name = EXCLUDED.display_name;
+    display_name = EXCLUDED.display_name,
+    phone_number = COALESCE(EXCLUDED.phone_number, public.profiles.phone_number);
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

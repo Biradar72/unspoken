@@ -51,6 +51,7 @@ model Profile {
   bio              String?
   avatarUrl        String?   @map("avatar_url")
   website          String?
+  phoneNumber      String?   @map("phone_number")
   poetryInterests  String[]  @map("poetry_interests")
   isAdmin          Boolean   @default(false) @map("is_admin")
   isSuspended      Boolean   @default(false) @map("is_suspended")

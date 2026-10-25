@@ -37,6 +37,7 @@ export interface Database {
           bio: string | null
           avatar_url: string | null
           website: string | null
+          phone_number: string | null
           poetry_interests: string[] | null
           is_admin: boolean
           is_suspended: boolean
@@ -51,6 +52,7 @@ export interface Database {
           bio?: string | null
           avatar_url?: string | null
           website?: string | null
+          phone_number?: string | null
           poetry_interests?: string[] | null
           is_admin?: boolean
           is_suspended?: boolean
@@ -65,6 +67,7 @@ export interface Database {
           bio?: string | null
           avatar_url?: string | null
           website?: string | null
+          phone_number?: string | null
           poetry_interests?: string[] | null
           is_admin?: boolean
           is_suspended?: boolean
