@@ -7,6 +7,7 @@ export function Footer() {
   const links = [
     { label: 'About', href: '/about' },
     { label: 'Community Guidelines', href: '/community-guidelines' },
+    { label: 'Feedback', href: '/feedback' },
     { label: 'Privacy Policy', href: '/privacy' },
     { label: 'Terms of Service', href: '/terms' },
     { label: 'Contact', href: '/contact' },

@@ -255,6 +255,33 @@ export interface Database {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          id: string
+          user_id: string | null
+          rating: number | null
+          category: string
+          message: string
+          email: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          rating?: number | null
+          category?: string
+          message: string
+          email?: string | null
+          created_at?: string
+        }
+        Update: {
+          rating?: number | null
+          category?: string
+          message?: string
+          email?: string | null
+        }
+        Relationships: []
+      }
       blocked_users: {
         Row: {
           id: string
@@ -371,6 +398,7 @@ export type Bookmark = Database['public']['Tables']['bookmarks']['Row']
 export type Comment = Database['public']['Tables']['comments']['Row']
 export type Notification = Database['public']['Tables']['notifications']['Row']
 export type Report = Database['public']['Tables']['reports']['Row']
+export type Feedback = Database['public']['Tables']['feedback']['Row']
 export type BlockedUser = Database['public']['Tables']['blocked_users']['Row']
 export type WritingPrompt = Database['public']['Tables']['writing_prompts']['Row']
 

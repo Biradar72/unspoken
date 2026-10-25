@@ -14,6 +14,8 @@ import {
   Plus,
   Trash2,
   ExternalLink,
+  Star,
+  MessageSquareHeart,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -50,11 +52,26 @@ interface PromptItem {
   created_at: string
 }
 
+interface FeedbackItem {
+  id: string
+  user_id: string | null
+  rating: number | null
+  category: string
+  message: string
+  email: string | null
+  created_at: string
+  profiles?: {
+    username: string
+    display_name: string
+  }
+}
+
 interface AdminDashboardClientProps {
   currentUserId: string
   stats: Stats
   initialReports: any[]
   initialPrompts: PromptItem[]
+  initialFeedback: FeedbackItem[]
 }
 
 export function AdminDashboardClient({
@@ -62,11 +79,13 @@ export function AdminDashboardClient({
   stats: initialStats,
   initialReports,
   initialPrompts,
+  initialFeedback,
 }: AdminDashboardClientProps) {
   const supabase = createClient()
-  const [activeTab, setActiveTab] = useState<'reports' | 'prompts'>('reports')
+  const [activeTab, setActiveTab] = useState<'reports' | 'prompts' | 'feedback'>('reports')
   const [reports, setReports] = useState<ReportItem[]>(initialReports)
   const [prompts, setPrompts] = useState<PromptItem[]>(initialPrompts)
+  const [feedback, setFeedback] = useState<FeedbackItem[]>(initialFeedback)
   const [stats, setStats] = useState(initialStats)
 
   // New prompt form state
@@ -250,6 +269,17 @@ export function AdminDashboardClient({
           <Sparkles size={16} />
           Writing Prompts Manager ({prompts.length})
         </button>
+        <button
+          onClick={() => setActiveTab('feedback')}
+          className={`pb-3 font-medium text-sm transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'feedback'
+              ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          <MessageSquareHeart size={16} />
+          Community Feedback ({feedback.length})
+        </button>
       </div>
 
       {/* Reports Tab Content */}
@@ -431,6 +461,132 @@ export function AdminDashboardClient({
           </div>
         </div>
       )}
+
+      {/* Community Feedback Tab Content */}
+      {activeTab === 'feedback' && (
+        <div className="space-y-6">
+          {/* Feedback Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="card p-5">
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Average Rating</span>
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-3xl font-serif font-bold text-[var(--color-gold)]">
+                  {feedback.filter(f => f.rating).length > 0
+                    ? (
+                        feedback
+                          .filter(f => f.rating)
+                          .reduce((acc, curr) => acc + (curr.rating || 0), 0) /
+                        feedback.filter(f => f.rating).length
+                      ).toFixed(1)
+                    : 'N/A'}
+                </span>
+                <span className="text-sm text-[var(--text-muted)]">/ 5.0</span>
+              </div>
+              <div className="flex gap-1 text-[var(--color-gold)] mt-1">
+                {[1, 2, 3, 4, 5].map(star => {
+                  const avg = feedback.filter(f => f.rating).length > 0
+                    ? feedback.filter(f => f.rating).reduce((acc, curr) => acc + (curr.rating || 0), 0) / feedback.filter(f => f.rating).length
+                    : 0
+                  return (
+                    <Star
+                      key={star}
+                      size={14}
+                      className={star <= Math.round(avg) ? 'fill-current' : 'opacity-30'}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="card p-5">
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Total Feedback</span>
+              <p className="text-3xl font-serif font-bold mt-2 text-[var(--text-primary)]">
+                {feedback.length}
+              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                From registered poets and readers
+              </p>
+            </div>
+
+            <div className="card p-5">
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Categories</span>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {['feature', 'design', 'writing', 'bug', 'praise'].map(cat => {
+                  const count = feedback.filter(f => f.category === cat).length
+                  return (
+                    <span
+                      key={cat}
+                      className="text-xs px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-medium capitalize"
+                    >
+                      {cat}: {count}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Feedback List */}
+          <div className="space-y-4">
+            {feedback.length === 0 ? (
+              <div className="card p-12 text-center text-[var(--text-muted)]">
+                <MessageSquareHeart size={36} className="mx-auto mb-3 opacity-60 text-[var(--color-primary)]" />
+                <p className="font-serif text-lg font-medium text-[var(--text-primary)]">No Feedback Yet</p>
+                <p className="text-sm mt-1">When readers and poets submit feedback via /feedback, it will appear here.</p>
+              </div>
+            ) : (
+              feedback.map(item => (
+                <div key={item.id} className="card p-5 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs px-2.5 py-0.5 rounded-full font-medium capitalize bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                        {item.category}
+                      </span>
+                      {item.rating && (
+                        <div className="flex items-center gap-0.5 text-[var(--color-gold)]">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <Star
+                              key={star}
+                              size={12}
+                              className={star <= item.rating! ? 'fill-current' : 'opacity-20'}
+                            />
+                          ))}
+                          <span className="text-xs font-semibold ml-1 text-[var(--text-secondary)]">
+                            {item.rating}/5
+                          </span>
+                        </div>
+                      )}
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {format(new Date(item.created_at), 'MMM d, yyyy · h:mm a')}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-[var(--text-muted)]">
+                      {item.profiles ? (
+                        <span>
+                          By{' '}
+                          <span className="font-medium text-[var(--text-primary)]">
+                            {item.profiles.display_name} (@{item.profiles.username})
+                          </span>
+                        </span>
+                      ) : item.email ? (
+                        <span>By {item.email}</span>
+                      ) : (
+                        <span>Anonymous</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-sm leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
+                    {item.message}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+

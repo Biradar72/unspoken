@@ -160,6 +160,19 @@ CREATE TABLE IF NOT EXISTS public.reports (
 );
 
 -- ============================================
+-- 9B. FEEDBACK
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.feedback (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id    UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  rating     INTEGER CHECK (rating >= 1 AND rating <= 5),
+  category   TEXT NOT NULL DEFAULT 'suggestion',
+  message    TEXT NOT NULL,
+  email      TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================
 -- 10. BLOCKED USERS
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.blocked_users (
@@ -560,6 +573,18 @@ CREATE POLICY "Admins can read reports"
 DROP POLICY IF EXISTS "Admins can update reports" ON public.reports;
 CREATE POLICY "Admins can update reports"
   ON public.reports FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+-- FEEDBACK policies
+ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Feedback is insertable by anyone" ON public.feedback;
+CREATE POLICY "Feedback is insertable by anyone"
+  ON public.feedback FOR INSERT WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "Admins can read feedback" ON public.feedback;
+CREATE POLICY "Admins can read feedback"
+  ON public.feedback FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
   );
 

@@ -35,6 +35,7 @@ export default async function AdminPage() {
     { count: pendingReportsCount },
     { data: reports },
     { data: prompts },
+    { data: feedback },
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('poems').select('*', { count: 'exact', head: true }),
@@ -50,6 +51,11 @@ export default async function AdminPage() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(20),
+    supabase
+      .from('feedback')
+      .select('*, profiles:user_id(username, display_name)')
+      .order('created_at', { ascending: false })
+      .limit(50),
   ])
 
   return (
@@ -64,6 +70,7 @@ export default async function AdminPage() {
         }}
         initialReports={reports || []}
         initialPrompts={prompts || []}
+        initialFeedback={feedback || []}
       />
     </div>
   )
