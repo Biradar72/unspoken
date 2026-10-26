@@ -94,6 +94,7 @@ function LoginForm() {
         email: otpEmail.trim(),
         options: {
           shouldCreateUser: true, // allows existing and new poets
+          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
         },
       })
 

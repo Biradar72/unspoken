@@ -100,6 +100,7 @@ function SignupForm() {
             phone_number: mobileNumber.trim(),
           },
           shouldCreateUser: true,
+          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
         },
       })
 
